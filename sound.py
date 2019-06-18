@@ -10,8 +10,8 @@ from numpy import frombuffer
 
 import numpy as np
 import pandas as pd
-#import librosa
-#import librosa.display
+import librosa
+import librosa.display
 
 from scipy import signal
 #from scipy.fftpack import fft, ifft

@@ -32,7 +32,7 @@ from keras.utils import multi_gpu_model
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = "0,1,2,3,4,5,6,7"
+config.gpu_options.visible_device_list = "0,1,2"
 sess = tf.Session(config=config)
 K.set_session(sess)
 
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     classes = 3
     image_size = 512
         
-    gpu_count = 8
+    gpu_count = 3
     BATCH_SIZE = 16 * gpu_count
     NUM_EPOCH = 100
     
@@ -249,7 +249,7 @@ if __name__ == '__main__':
     if os.getcwd() == '/home/yui-sudo/document/segmentation/jpop_learning':
         datasets_dir = "/home/yui-sudo/document/dataset/"
     else:
-        datasets_dir = "/export2/sudou/"
+        datasets_dir = "/misc/export2/sudou/"
     
    
     datadir = "jpop_classification/"
