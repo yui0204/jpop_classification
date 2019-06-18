@@ -68,7 +68,8 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
     else:
         input_dim = 1
         
-    inputs = np.zeros((load_number, input_dim, 256, image_size), dtype=np.float32)
+    #inputs = np.zeros((load_number, input_dim, 256, image_size), dtype=np.float32)
+    inputs = np.zeros((load_number, input_dim, 40, image_size), dtype=np.float32)
     labels = np.zeros((load_number, n_classes), dtype=np.float32)
     artist_list = os.listdir(segdata_dir)
     artist_list.sort()
