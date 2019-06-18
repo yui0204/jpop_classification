@@ -99,7 +99,8 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
                     if complex_input == True:
                         inputs[i][1] = stft[:256].real
                         inputs[i][2] = stft[:256].imag
-                    inputs[i][0] = abs(stft[:256])
+                    #inputs[i][0] = abs(stft[:256])
+                    inputs[i][0] = stft
                     labels[i][cls] = 1
                     #print(artist, labels[i])
                     i += 1
