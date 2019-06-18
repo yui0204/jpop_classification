@@ -41,6 +41,7 @@ import soundfile as sf
 from scipy import signal
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
+from sound import WavfileOperate, Wavedata, Multiwave
 
 
 def normalize(inputs):
@@ -81,9 +82,11 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
             for file in filelist:
 #                print(file)
                 if file[-4:] == ".wav":
-                    waveform, fs = sf.read(segdata_dir + "/" + artist + "/" + album + "/" + file)
-                    freqs, t, stft = signal.stft(x=waveform, fs=fs, nperseg=512, 
-                                                           return_onesided=False)
+                    wave = WavfileOperate(segdata_dir + "/" + artist + "/" + album + "/" + file).wavedata
+                    stft = wave.mfcc(N=512, n_mels=40, n_mfcc=40, delta_k=0, plot=False)
+                    #waveform, fs = sf.read(segdata_dir + "/" + artist + "/" + album + "/" + file)
+                    #freqs, t, stft = signal.stft(x=waveform, fs=fs, nperseg=512, 
+                    #                                       return_onesided=False)
                     stft = stft[:, 1:len(stft.T) - 1]
                     if len(stft.T) > 512:
                         stft = stft.T[:512].T
@@ -128,7 +131,7 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
 def read_model(Model):
     with tf.device('/cpu:0'):
         if Model == "CNN":
-            model = CNN.CNN(n_classes=classes, input_height=256, 
+            model = CNN.CNN(n_classes=classes, input_height=40, 
                                 input_width=image_size, nChannels=1)
 
         elif Model == "CRNN8":
