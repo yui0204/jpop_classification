@@ -15,31 +15,43 @@ def CNN(n_classes, input_height=256, input_width=512, nChannels=3):
     
     x = Conv2D(64, (3, 3), activation='relu', padding='same')(inputs)
     x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x) # 128, 256, 64
     
     x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
     x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x) #64
 
     x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
     x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
     x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
-    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x) #32
     
     x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
     x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
     x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
-    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x) #16
     
     x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
     x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
     x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
-    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x) # 8, 16, 512
+
+    """
+    x = Reshape((8 * 512, 16))(x)
+
+    x = GRU(512, activation='tanh', recurrent_activation='hard_sigmoid',
+                            return_sequences=True,
+                            dropout=0.25, recurrent_dropout=0.25, stateful=False)(x)
+    
+    x = Conv1D(512, 1, activation='sigmoid')(x)
+    print(x)
+    x = Reshape((8, -1, 512))(x)
+    """                                
             
     x = Flatten()(x)
-    x = Dense(4096, activation='relu')(x)
-    x = Dense(4096, activation='relu')(x)
-    x = Dense(4, activation='relu')(x)
+    x = Dense(1024, activation='relu')(x)
+#    x = Dense(4096, activation='relu')(x)
+    x = Dense(3, activation='relu')(x)
     x = core.Activation('softmax')(x)
     
     model = Model(inputs=inputs, outputs=x)

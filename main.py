@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 import pydot, graphviz
 import pickle
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 import keras.backend as K
 from keras.callbacks import EarlyStopping
 from keras.utils import plot_model
@@ -32,7 +32,7 @@ from keras.utils import multi_gpu_model
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = "0"
+config.gpu_options.visible_device_list = "0,1,2,3,4,5,6,7"
 sess = tf.Session(config=config)
 K.set_session(sess)
 
@@ -66,27 +66,34 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
     else:
         input_dim = 1
         
-    inputs = np.zeros((load_number, input_dim, 256, image_size), dtype=np.float16)
-    labels = np.zeros((load_number, n_classes), dtype=np.float16)
+    inputs = np.zeros((load_number, input_dim, 256, image_size), dtype=np.float32)
+    labels = np.zeros((load_number, n_classes), dtype=np.float32)
     artist_list = os.listdir(segdata_dir)
     artist_list.sort()
     i = 0
     cls = 0
     for artist in artist_list:
+        print(artist)
         album_list = os.listdir(segdata_dir + "/" + artist + "/")
         for album in album_list:
+            print(album)
             filelist = os.listdir(segdata_dir + "/" + artist + "/" + album + "/")
             for file in filelist:
+#                print(file)
                 if file[-4:] == ".wav":
                     waveform, fs = sf.read(segdata_dir + "/" + artist + "/" + album + "/" + file)
                     freqs, t, stft = signal.stft(x=waveform, fs=fs, nperseg=512, 
                                                            return_onesided=False)
                     stft = stft[:, 1:len(stft.T) - 1]
+                    if len(stft.T) > 512:
+                        stft = stft.T[:512].T
                     if complex_input == True:
                         inputs[i][1] = stft[:256].real
                         inputs[i][2] = stft[:256].imag
                     inputs[i][0] = abs(stft[:256])
                     labels[i][cls] = 1
+                    #print(artist, labels[i])
+                    i += 1
         cls += 1
 
     
@@ -124,7 +131,7 @@ def read_model(Model):
             model = CNN.CNN(n_classes=classes, input_height=256, 
                                 input_width=image_size, nChannels=1)
 
-        elif Model == "CRNN":
+        elif Model == "CRNN8":
             model = CNN.CRNN(n_classes=classes, input_height=256, 
                                 input_width=image_size, nChannels=1)
 
@@ -151,7 +158,7 @@ def train(X_train, Y_train, Model):
 
     plot_model(model, to_file = results_dir + model_name + '.png')
 
-    early_stopping = EarlyStopping(monitor="val_loss", patience=20, verbose=1,mode="auto")
+    early_stopping = EarlyStopping(monitor="val_loss", patience=100, verbose=1,mode="auto")
     
     model.summary()
 
@@ -162,11 +169,11 @@ def train(X_train, Y_train, Model):
     
     if gpu_count == 1:            
         history = model.fit(X_train, Y_train, batch_size=BATCH_SIZE, 
-                            epochs=NUM_EPOCH, verbose=1, validation_split=0.1,
+                            epochs=NUM_EPOCH, verbose=1, validation_split=0.2,
                             callbacks=[early_stopping])        
     else:       
         history = multi_model.fit(X_train, Y_train, batch_size=BATCH_SIZE, 
-                            epochs=NUM_EPOCH, verbose=1, validation_split=0.1,
+                            epochs=NUM_EPOCH, verbose=1, validation_split=0.2,
                             callbacks=[early_stopping])                 
 
 
@@ -216,6 +223,7 @@ def predict(X_test, Model):
         X_test = [X_test, 
                   X_test.transpose(3,0,1,2)[0][np.newaxis,:,:,:].transpose(1,2,3,0)]
     Y_pred = model.predict(X_test, BATCH_SIZE * gpu_count)
+           
     print("prediction finished\n")
     
     return Y_pred
@@ -223,11 +231,10 @@ def predict(X_test, Model):
 
 
 if __name__ == '__main__':
-    classes = 4
+    classes = 3
     image_size = 512
-    task = "classification"
-    
-    gpu_count = 1
+        
+    gpu_count = 8
     BATCH_SIZE = 16 * gpu_count
     NUM_EPOCH = 100
     
@@ -242,7 +249,7 @@ if __name__ == '__main__':
     if os.getcwd() == '/home/yui-sudo/document/segmentation/jpop_learning':
         datasets_dir = "/home/yui-sudo/document/dataset/"
     else:
-        datasets_dir = "/misc/export2/sudou/"
+        datasets_dir = "/export2/sudou/"
     
    
     datadir = "jpop_classification/"
@@ -253,7 +260,7 @@ if __name__ == '__main__':
     Model = "CNN"        
     complex_input = False
     VGG = 0                     #0: False, 1: Red 3: White
-    load_number = 2911
+    load_number = 1799
     
     model_name = Model+"_"+str(classes)+"class_cin"+str(complex_input)
     dir_name = model_name + "_"+datadir
@@ -268,6 +275,7 @@ if __name__ == '__main__':
         X_train, Y_train = load(segdata_dir, n_classes=classes, load_number=load_number,
                                 complex_input=complex_input)
 
+        print(X_train.shape, Y_train.shape)
         
         history = train(X_train, Y_train, Model)
         plot_history(history, model_name)
@@ -280,10 +288,13 @@ if __name__ == '__main__':
         results_dir = "./model_results/" + date + "/" + dir_name
 
         
-    load_number = 1369
+    load_number = 1127
     X_test, Y_test = load(valdata_dir, n_classes=classes, load_number=load_number, 
                           complex_input=complex_input)
     Y_pred = predict(X_test, Model)
+    print(Y_pred)
+    Y_pred = np.argmax(Y_pred, axis=1)[:, np.newaxis]
+    Y_test = np.argmax(Y_test, axis=1)[:, np.newaxis]
     
     print(accuracy_score(Y_test, Y_pred))
     print(confusion_matrix(Y_test, Y_pred))
