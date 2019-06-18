@@ -32,7 +32,7 @@ from keras.utils import multi_gpu_model
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = "0,1,2"
+config.gpu_options.visible_device_list = "0"
 sess = tf.Session(config=config)
 K.set_session(sess)
 
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     classes = 3
     image_size = 512
         
-    gpu_count = 3
+    gpu_count = 1
     BATCH_SIZE = 16 * gpu_count
     NUM_EPOCH = 40
     
@@ -305,19 +305,37 @@ if __name__ == '__main__':
 
         
     load_number = 1127
+    """
     X_test, Y_test = load(valdata_dir, n_classes=classes, load_number=load_number, 
                           complex_input=complex_input)
     Y_pred = predict(X_test, Model)
     print(Y_pred)
     Y_pred = np.argmax(Y_pred, axis=1)[:, np.newaxis]
     Y_test = np.argmax(Y_test, axis=1)[:, np.newaxis]
-    
+    """
     print(accuracy_score(Y_test, Y_pred))
     print(confusion_matrix(Y_test, Y_pred))
     
     with open(results_dir + 'result.txt','w') as f:
-        f.write(str(accuracy_score(Y_test, Y_pred)) + "\n" + str(confusion_matrix(Y_test, Y_pred)))    
-
+        result = ""
+        artist_list = os.listdir(segdata_dir)
+        artist_list.sort()
+        i = 0
+        cls = 0
+        for artist in artist_list:
+            print(artist)
+            album_list = os.listdir(valdata_dir + "/" + artist + "/")
+            for album in album_list:
+                print(album)
+                filelist = os.listdir(valdata_dir + "/" + artist + "/" + album + "/")
+                for file in filelist:
+                    print(artist, file, Y_test[i] == Y_pred[i])
+                    if not Y_test[i] == Y_pred[i]:
+                        result += artist + ", " +  file + ", " +  str(Y_test[i])+ str(Y_pred[i])+str(Y_test[i] == Y_pred[i]) + "\n"
+                    i += 1
+        f.write(result + "\n" + str(accuracy_score(Y_test, Y_pred)) + "\n" + str(confusion_matrix(Y_test, Y_pred)))
+        
+        
         
     if not os.getcwd() == '/home/yui-sudo/document/segmentation/sound_segtest':
         shutil.copy("main.py", results_dir)
@@ -326,5 +344,5 @@ if __name__ == '__main__':
         # copy to export2
 #        shutil.copytree(results_dir, "/misc/export2/sudou/model_results/" + date + "/" + dir_name)
                                 
-    os.remove("CNN.pyc")
-    os.remove("sound.pyc")
+    #os.remove("CNN.pyc")
+    #os.remove("sound.pyc")
