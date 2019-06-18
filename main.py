@@ -32,7 +32,7 @@ from keras.utils import multi_gpu_model
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = "0,1,2"
+config.gpu_options.visible_device_list = "0"
 sess = tf.Session(config=config)
 K.set_session(sess)
 
@@ -42,6 +42,7 @@ from scipy import signal
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sound import WavfileOperate, Wavedata, Multiwave
+import librosa
 
 
 def normalize(inputs):
@@ -83,7 +84,12 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
 #                print(file)
                 if file[-4:] == ".wav":
                     wave = WavfileOperate(segdata_dir + "/" + artist + "/" + album + "/" + file).wavedata
-                    stft = wave.mfcc(N=512, n_mels=40, n_mfcc=40, delta_k=0, plot=False)
+                    melspectrogram = librosa.feature.melspectrogram(y=wave.norm_sound, 
+                                                            sr=wave.fs, n_fft=512, 
+                                                            hop_length=512//2, n_mels=40)    
+                    melspectrogram = 10 * np.log10(melspectrogram)
+                    stft = librosa.feature.mfcc(y=wave.norm_sound, sr=wave.fs, 
+                                         S = melspectrogram, n_mfcc=40)
                     #waveform, fs = sf.read(segdata_dir + "/" + artist + "/" + album + "/" + file)
                     #freqs, t, stft = signal.stft(x=waveform, fs=fs, nperseg=512, 
                     #                                       return_onesided=False)
@@ -249,7 +255,7 @@ if __name__ == '__main__':
     date = mode       
     plot = True
     
-    if os.getcwd() == '/home/yui-sudo/document/segmentation/jpop_learning':
+    if os.getcwd() == '/home/yui-sudo/document/segmentation/jpop_classification':
         datasets_dir = "/home/yui-sudo/document/dataset/"
     else:
         datasets_dir = "/misc/export2/sudou/"
