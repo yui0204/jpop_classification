@@ -32,7 +32,7 @@ from keras.utils import multi_gpu_model
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = "0"
+config.gpu_options.visible_device_list = "0,1,2"
 sess = tf.Session(config=config)
 K.set_session(sess)
 
@@ -68,8 +68,8 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
     else:
         input_dim = 1
         
-    #inputs = np.zeros((load_number, input_dim, 256, image_size), dtype=np.float32)
-    inputs = np.zeros((load_number, input_dim, 40, image_size), dtype=np.float32)
+    inputs = np.zeros((load_number, input_dim, 256, image_size), dtype=np.float32)
+    #inputs = np.zeros((load_number, input_dim, 40, image_size), dtype=np.float32)
     labels = np.zeros((load_number, n_classes), dtype=np.float32)
     artist_list = os.listdir(segdata_dir)
     artist_list.sort()
@@ -84,24 +84,24 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
             for file in filelist:
 #                print(file)
                 if file[-4:] == ".wav":
-                    wave = WavfileOperate(segdata_dir + "/" + artist + "/" + album + "/" + file).wavedata
-                    melspectrogram = librosa.feature.melspectrogram(y=wave.norm_sound, 
-                                                            sr=wave.fs, n_fft=512, 
-                                                            hop_length=512//2, n_mels=40)    
-                    melspectrogram = 10 * np.log10(melspectrogram)
-                    stft = librosa.feature.mfcc(y=wave.norm_sound, sr=wave.fs, 
-                                         S = melspectrogram, n_mfcc=40)
-                    #waveform, fs = sf.read(segdata_dir + "/" + artist + "/" + album + "/" + file)
-                    #freqs, t, stft = signal.stft(x=waveform, fs=fs, nperseg=512, 
-                    #                                       return_onesided=False)
+                    #wave = WavfileOperate(segdata_dir + "/" + artist + "/" + album + "/" + file).wavedata
+                    #melspectrogram = librosa.feature.melspectrogram(y=wave.norm_sound, 
+                    #                                        sr=wave.fs, n_fft=512, 
+                    #                                        hop_length=512//2, n_mels=40)    
+                    #melspectrogram = 10 * np.log10(melspectrogram)
+                    #stft = librosa.feature.mfcc(y=wave.norm_sound, sr=wave.fs, 
+                    #                     S = melspectrogram, n_mfcc=40)
+                    waveform, fs = sf.read(segdata_dir + "/" + artist + "/" + album + "/" + file)
+                    freqs, t, stft = signal.stft(x=waveform, fs=fs, nperseg=512, 
+                                                           return_onesided=False)
                     stft = stft[:, 1:len(stft.T) - 1]
                     if len(stft.T) > 512:
                         stft = stft.T[:512].T
                     if complex_input == True:
                         inputs[i][1] = stft[:256].real
                         inputs[i][2] = stft[:256].imag
-                    #inputs[i][0] = abs(stft[:256])
-                    inputs[i][0] = stft
+                    inputs[i][0] = abs(stft[:256])
+                    #inputs[i][0] = stft
                     labels[i][cls] = 1
                     #print(artist, labels[i])
                     i += 1
@@ -139,7 +139,7 @@ def load(segdata_dir, n_classes=8, load_number=2911, complex_input=False):
 def read_model(Model):
     with tf.device('/cpu:0'):
         if Model == "CNN":
-            model = CNN.CNN(n_classes=classes, input_height=40, 
+            model = CNN.CNN(n_classes=classes, input_height=256, 
                                 input_width=image_size, nChannels=1)
 
         elif Model == "CRNN8":
@@ -169,7 +169,7 @@ def train(X_train, Y_train, Model):
 
     plot_model(model, to_file = results_dir + model_name + '.png')
 
-    early_stopping = EarlyStopping(monitor="val_loss", patience=100, verbose=1,mode="auto")
+    early_stopping = EarlyStopping(monitor="val_loss", patience=20, verbose=1,mode="auto")
     
     model.summary()
 
@@ -180,11 +180,11 @@ def train(X_train, Y_train, Model):
     
     if gpu_count == 1:            
         history = model.fit(X_train, Y_train, batch_size=BATCH_SIZE, 
-                            epochs=NUM_EPOCH, verbose=1, validation_split=0.2,
+                            epochs=NUM_EPOCH, verbose=1, validation_split=0.0,
                             callbacks=[early_stopping])        
     else:       
         history = multi_model.fit(X_train, Y_train, batch_size=BATCH_SIZE, 
-                            epochs=NUM_EPOCH, verbose=1, validation_split=0.2,
+                            epochs=NUM_EPOCH, verbose=1, validation_split=0.0,
                             callbacks=[early_stopping])                 
 
 
@@ -202,7 +202,7 @@ def train(X_train, Y_train, Model):
 
 
 def plot_history(history, model_name):
-    
+    """
     plt.plot(history.history['acc'])
     plt.plot(history.history['val_acc'])
     plt.title('accuracy')
@@ -211,16 +211,16 @@ def plot_history(history, model_name):
     plt.legend(['acc', 'val_acc'], loc='lower right')
     plt.savefig(results_dir + model_name + "_accuracy.png")
     plt.close()
-    
+    """
     plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
+#    plt.plot(history.history['val_loss'])
     plt.title('loss')
     plt.xlabel('epoch')
     plt.ylabel('loss')
-    plt.xlim(0, 300)
+    plt.xlim(0, 30)
     plt.ylim(0.0, 0.03)
-    plt.legend(['loss', 'val_loss'], loc='upper right')
-    plt.savefig(results_dir + "loss_"+str(np.array((history.history["val_loss"])).min())+".png")
+#    plt.legend(['loss', 'val_loss'], loc='upper right')
+#    plt.savefig(results_dir + "loss_"+str(np.array((history.history["val_loss"])).min())+".png")
     plt.close()
 
 
@@ -247,13 +247,13 @@ if __name__ == '__main__':
         
     gpu_count = 3
     BATCH_SIZE = 16 * gpu_count
-    NUM_EPOCH = 100
+    NUM_EPOCH = 40
     
     lr = 0.0001
     
     loss = "categorical_crossentropy"
 
-    mode = "train"
+    mode = "2019_0619"
     date = mode       
     plot = True
     
@@ -285,6 +285,11 @@ if __name__ == '__main__':
                             
         X_train, Y_train = load(segdata_dir, n_classes=classes, load_number=load_number,
                                 complex_input=complex_input)
+
+        p = np.random.permutation(load_number)
+        X_train = X_train[p]
+        Y_train = Y_train[p]
+        
 
         print(X_train.shape, Y_train.shape)
         

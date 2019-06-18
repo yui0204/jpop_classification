@@ -13,28 +13,38 @@ from keras.layers.merge import multiply, dot
 def CNN(n_classes, input_height=256, input_width=512, nChannels=3):
     inputs = Input((input_height, input_width, nChannels))
     
-    x = Conv2D(64, (3, 3), activation='relu', padding='same')(inputs)
-    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
+#    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2))(x) # 128, 256, 64
     
-    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+#    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2))(x) #64
 
-    x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
-    x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
-    x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)    
+#    x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
+#    x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)    
     x = MaxPooling2D((2, 2), strides=(2, 2))(x) #32
     
-    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
-    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
-    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)    
+#    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
+#    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
     x = MaxPooling2D((2, 2), strides=(2, 2))(x) #16
     
-    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
-    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
-    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)    
+#    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
+#    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)    
     x = MaxPooling2D((2, 2), strides=(2, 2))(x) # 8, 16, 512
+    """
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+    """
 
     """
     x = Reshape((8 * 512, 16))(x)
@@ -49,7 +59,7 @@ def CNN(n_classes, input_height=256, input_width=512, nChannels=3):
     """                                
             
     x = Flatten()(x)
-    x = Dense(1024, activation='relu')(x)
+    x = Dense(128, activation='relu')(x)
 #    x = Dense(4096, activation='relu')(x)
     x = Dense(3, activation='relu')(x)
     x = core.Activation('softmax')(x)
